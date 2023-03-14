@@ -10,10 +10,6 @@
       list-style: none
     }
 
-    li {
-      word-wrap: break-word;
-    }
-
     .button-group {
       display: flex;
       flex-wrap: wrap;
@@ -25,7 +21,6 @@
       flex-direction: column;
       align-items: flex-start;
     }
-
 
     details summary {
       margin-bottom: 10px;
@@ -87,7 +82,7 @@
         nodes</button>
       <h4>All pages</h4>
       <p class="type--large">This replaces all detached nodes in all figma pages</p>
-      <p class="text-danger">Beware that this may take several minutes and freeze your figma file for a few minutes.</p>
+      <p class="text-danger">Beware that this may take several minutes and freeze your figma file for that time.</p>
       <button class="button button--primary-destructive" id="replace-all-detached">Replace all detached nodes
         (intense)</button>
     </section>
@@ -95,7 +90,8 @@
     <section class="m-small">
 
       <h3>Search and select</h3>
-      <p class="type--large">Search for specific nodes and select all of them in current page. Mixed styles apply to text-decoration only.</p>
+      <p class="type--large">Search for specific nodes and select all of them in current page. Mixed styles apply to
+        text-decoration only.</p>
       <div class="button-group">
         <button class='button button--secondary' id="find-no-style-nodes">Find nodes without styles applied</button>
         <button class='button button--secondary' id="find-mixed-style-nodes">Find nodes with mixed styles</button>
@@ -113,7 +109,8 @@
     <hr>
     <section class="m-small">
       <h3>Repair (current)</h3>
-      <p class="type--large">Repair nodes which have mixed styles (only mixed text-decoration) applied on their properties in current page</p>
+      <p class="type--large">Repair nodes which have mixed styles (only mixed text-decoration) applied on their
+        properties in current page</p>
       <div class="button-group">
         <button class='button button--secondary' id="repair-mixed">Repair nodes with mixed styles</button>
       </div>
@@ -122,28 +119,9 @@
   </section>
 
   <script>
-    const findCurrent = (button) => {
-      const id = button.getAttribute('data-style-id')
-      parent.postMessage({ pluginMessage: { type: 'find-current-nodes', id } }, '*')
-    }
-
-    const findAll = (button) => {
-      const id = button.getAttribute('data-style-id')
-      parent.postMessage({ pluginMessage: { type: 'find-all-nodes', id } }, '*')
-    }
-
-    const applyStyle = (button) => {
-      const id = button.getAttribute('data-style-id')
-      parent.postMessage({ pluginMessage: { type: 'apply-style', id } }, '*')
-    }
-    const applyStyleAll = (button) => {
-      const id = button.getAttribute('data-style-id')
-      parent.postMessage({ pluginMessage: { type: 'apply-style-all', id } }, '*')
-    }
-
     window.onmessage = event => {
       const msg = event.data.pluginMessage
-      const { type, styles } = msg
+      const { type, styles, message } = msg
 
       const list = document.getElementById('list')
       const listWrapper = document.getElementById('list-wrapper')
@@ -166,8 +144,8 @@
             <strong>Current page</strong>
             <p class="type--large">Find nodes and apply styles in the current page</p>
             <div class='button-group button-group--vertical'>
-              <button class='button button--secondary' data-style-id="${style.id}" onclick="findCurrent(this)">Find in current page</button>
-              <button class='button button--primary' data-style-id="${style.id}" onclick="applyStyle(this)">Apply style to selection</button>
+              <button class='button button--secondary' data-style-id="${style.id}" onclick="postMessageWithId(this, 'find-current-nodes')">Find in current page</button>
+              <button class='button button--primary' data-style-id="${style.id}" onclick="postMessageWithId(this, 'apply-style')">Apply style to selection</button>
             </div>            
           </details>
         </li>
@@ -177,8 +155,8 @@
         // <strong>All pages (intense)</strong>
         // <p class="type--large">This is intense operation. This may freeze figma file for a while. <strong>Be aware</strong></p>
         // <div class="button-group button-group--vertical">
-        //   <button class='button button--secondary-destructive' data-style-id="${style.id}" onclick="findAll(this)">Find in all pages</button>
-        //   <button class='button button--primary button--primary-destructive' data-style-id="${style.id}" onclick="applyStyleAll(this)">Apply style to selection in all pages</button>  
+        //   <button class='button button--secondary-destructive' data-style-id="${style.id}" onclick="postMessageWithId(this, 'find-all-nodes')">Find in all pages</button>
+        //   <button class='button button--primary button--primary-destructive' data-style-id="${style.id}" onclick="postMessageWithId(this, 'apply-style-all')">Apply style to selection in all pages</button>  
         // </div>
 
         empty.setAttribute('hidden', true)
@@ -193,35 +171,31 @@
 
     }
 
-    document.getElementById('load-base-styles').onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'load-base-styles' } }, '*')
-    }
-    document.getElementById('clear-base-styles').onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'clear-base-styles' } }, '*')
-    }
-    document.getElementById('find-no-style-nodes').onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'find-no-style-nodes' } }, '*')
-    }
-    document.getElementById('find-mixed-style-nodes').onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'find-mixed-style-nodes' } }, '*')
-    }
-    document.getElementById('zoom-prev').onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'zoom-prev' } }, '*')
-    }
-    document.getElementById('zoom-next').onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'zoom-next' } }, '*')
-    }
-    document.getElementById('repair-mixed').onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'repair-mixed' } }, '*')
-    }
-    document.getElementById('replace-all-detached').onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'replace-all-detached' } }, '*')
-    }
-    document.getElementById('replace-current-detached').onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'replace-current-detached' } }, '*')
+    const postMessage = (options) => {
+      parent.postMessage({ pluginMessage: options }, '*')
     }
 
+    const postMessageWithId = (button, type) => {
+      const id = button.getAttribute('data-style-id')
+      postMessage({ type, id })
+    }
+
+    const buttonIds = [
+      'load-base-styles',
+      'clear-base-styles',
+      'find-no-style-nodes',
+      'find-mixed-style-nodes',
+      'zoom-prev',
+      'zoom-next',
+      'repair-mixed',
+      'replace-all-detached',
+      'replace-current-detached',
+    ]
+
+    buttonIds.forEach(buttonId => {
+      document.getElementById(buttonId).onclick = () => {
+        postMessage({ type: buttonId })
+      }
+    })
   </script>
 </body>
-
-</html>

@@ -4,7 +4,7 @@
 
 // Runs this code if the plugin is run in Figma
 if (figma.editorType === 'figma') {
-  
+
   // This shows the HTML page in "ui.html".
   figma.showUI(__html__, {
     themeColors: true,
@@ -12,7 +12,7 @@ if (figma.editorType === 'figma') {
     width: 300,
     height: 500
   });
-  
+
   // For storing data about library styles
   let styles: { id: string, name: string }[] = []
 
