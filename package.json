@@ -1,0 +1,16 @@
+{
+  "name": "figma-analyze-text-plugin",
+  "version": "0.0.1",
+  "description": "Repair detached text nodes",
+  "main": "code.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "npm run build -- --watch"
+  },
+  "author": "Dušan Tužinský",
+  "license": "",
+  "devDependencies": {
+    "@figma/plugin-typings": "*",
+    "typescript": "*"
+  }
+}
