@@ -10,7 +10,7 @@ if (figma.editorType === 'figma') {
     themeColors: true,
     title: 'AnalyzeText Plugin',
     width: 300,
-    height: 500
+    height: 600
   });
 
   // For storing data about library styles
@@ -103,7 +103,7 @@ if (figma.editorType === 'figma') {
       if (zoom) {
         figma.viewport.scrollAndZoomIntoView(figma.currentPage.selection)
       }
-      figma.notify(`Number detached nodes: ${matchingNodes.length}`)
+      figma.notify(`Detached nodes: ${matchingNodes.length}`)
     } else {
       figma.notify('No detached nodes found', { timeout: 1000, error: true })
     }
@@ -146,6 +146,7 @@ if (figma.editorType === 'figma') {
     if (figma.currentPage.selection.length > 0) {
       // @ts-ignore
       figma.currentPage.selection.forEach(node => applyStyle(id, node))
+      figma.notify(`Done applying styles! Processed nodes: ${figma.currentPage.selection.length}`)
     } else {
       figma.notify('You have to select/find some nodes to apply styles', { error: true })
     }
@@ -153,12 +154,15 @@ if (figma.editorType === 'figma') {
 
   // Apply style to all pages selections
   const applyStyleToSelectionAll = (id: string) => {
+    let count = 0
     const selection = figma.root.children.filter(page => page.selection.length > 0)
     if (selection.length > 0) {
       selection.forEach(page => {
         // @ts-ignore
         page.selection.forEach(node => applyStyle(id, node))
+        count += page.selection.length
       })
+      figma.notify(`Done applying styles! Processed nodes: ${count}`)
     } else {
       figma.notify('You have to select/find some nodes to apply styles', { error: true })
     }
@@ -169,6 +173,7 @@ if (figma.editorType === 'figma') {
     const noStyleTexts = figma.currentPage.findAll(node => node.type === 'TEXT' && node.textStyleId === '')
     figma.currentPage.selection = noStyleTexts
     figma.viewport.scrollAndZoomIntoView(figma.currentPage.selection)
+    figma.notify(`Done searching! Selected nodes: ${noStyleTexts.length}`)
   }
 
   // Find nodes with mixed styles (only textDecoration)
@@ -176,6 +181,7 @@ if (figma.editorType === 'figma') {
     const mixedStyleTexts = figma.currentPage.findAll(node => node.type === 'TEXT' && node.textStyleId === '' && typeof node.textDecoration !== 'string')
     figma.currentPage.selection = mixedStyleTexts
     figma.viewport.scrollAndZoomIntoView(figma.currentPage.selection)
+    figma.notify(`Done searching! Selected nodes: ${mixedStyleTexts.length}`)
   }
 
   // Find node style and apply it
@@ -189,19 +195,22 @@ if (figma.editorType === 'figma') {
 
   // Repair nodes with mixed styles
   const repairNodesWithMixedStyle = () => {
-    figma.currentPage.findAll(node => node.type === 'TEXT' && node.textStyleId === '' && typeof node.textDecoration !== 'string').forEach(node => {
+    const nodes = figma.currentPage.findAll(node => node.type === 'TEXT' && node.textStyleId === '' && typeof node.textDecoration !== 'string')
+    nodes.forEach(node => {
       findAndApplyStyle(node)
     })
+    figma.notify(`Done repairing! Nodes repaired: ${nodes.length}`)
   }
 
   // Replace detached nodes
   const replaceDetached = (wrapperNode = figma.currentPage) => {
-    wrapperNode
+    const nodes = wrapperNode
       .findAll(node => node.type === 'TEXT' && node.textStyleId === '')
+    nodes
       .forEach(node => {
         findAndApplyStyle(node)
       })
-    figma.notify('Done replacing!')
+    figma.notify(`Done replacing! Nodes processed: ${nodes.length}`)
   }
 
   // Replace all pages detached nodes
