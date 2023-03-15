@@ -208,9 +208,7 @@ if (figma.editorType === 'figma') {
     const style = figma.getStyleById(styleId)
     const nodes = figma.currentPage
       .findAll(node => node.type === 'TEXT' && node.textStyleId === '')
-      .filter(node => {
-        checkEquality(style, node)
-      })
+      .filter(node => checkEquality(style, node))
     figma.currentPage.selection = nodes
     figma.viewport.scrollAndZoomIntoView(figma.currentPage.selection)
     figma.notify(`Done searching! Selected nodes: ${nodes.length}`)
