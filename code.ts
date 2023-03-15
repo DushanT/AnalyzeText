@@ -19,6 +19,11 @@ if (figma.editorType === 'figma') {
 
   // Initialize data from client storage
   const init = async () => {
+    if(figma.hasMissingFont) {
+      figma.ui.postMessage({
+        type: 'missing-fonts'
+      })
+    }
     styles = JSON.parse(await figma.clientStorage.getAsync('styles'))
     if (styles.length > 0) {
       figma.ui.postMessage({
@@ -28,7 +33,7 @@ if (figma.editorType === 'figma') {
       figma.ui.resize(350, 410)
     }
   }
-
+  
   // Save style data to client storage
   const loadStyles = () => {
     const textNodes = figma.currentPage.selection.filter(node => node.type === 'TEXT' && node.textStyleId)
@@ -139,9 +144,9 @@ if (figma.editorType === 'figma') {
     if (textSegments.length > 1) {
       // repair mixed text decoration after style update
       // NOT WORKING IF NOT LOADED FONTS
-      textSegments.map(segment => {
-        node.setRangeTextDecoration(segment.start, segment.end, segment.textDecoration)
-      })
+        textSegments.map(segment => {
+          node.setRangeTextDecoration(segment.start, segment.end, segment.textDecoration)
+        })
     }
   }
 
@@ -241,7 +246,7 @@ if (figma.editorType === 'figma') {
       .findAll(node => node.type === 'TEXT' && node.textStyleId === '')
     nodes
       .forEach(node => {
-        if(findAndApplyStyle(node)) {
+        if (findAndApplyStyle(node)) {
           countSuccessful += 1
         }
       })
@@ -263,11 +268,11 @@ if (figma.editorType === 'figma') {
   const fixSelected = () => {
     let countProcessed = 0
     figma.currentPage.selection.forEach(node => {
-      if(findAndApplyStyle(node)) {
+      if (findAndApplyStyle(node)) {
         countProcessed += 1
       }
     })
-    if(figma.currentPage.selection) {
+    if (figma.currentPage.selection) {
       figma.notify(`Done replacing! Nodes processed: ${figma.currentPage.selection.length}, Nodes fixed: ${countProcessed}`)
     } else {
       figma.notify('You have to select something to apply styles', { error: true })

@@ -54,6 +54,9 @@
       justify-content: center;
       cursor: pointer;
     }
+    .button:disabled {
+      cursor: default;
+    }
 
     .icon-button .icon {
       pointer-events: none;
@@ -119,13 +122,26 @@
     [data-tooltip] {
       position: relative;
     }
+    .alert {
+      background: var(--figma-color-bg-warning);
+    }
+    [hidden] {
+      display: none;
+    }
   </style>
 </head>
 
 <body class="type--small">
+  
   <section id="empty" class="m-small">
     <h2 class="type--small mb-xsmall">Loading styles</h2>
     <p>First you need to select text with text styles applied</p>
+    <p id="missing-fonts-alert" class="alert p-xxsmall bar bar--stretch" hidden>
+      <span class="icon icon--warning"></span>
+      <span>
+        You have missing fonts in this file. Please load all the neccessary fonts and try again.
+      </span>
+    </p>
     <button class='button button--primary' id="load-base-styles">Load styles from selection</button>
   </section>
   <section id="content-wrapper" hidden>
@@ -194,6 +210,11 @@
       const selectStyle = document.getElementById('select-style')
       const contentWrapper = document.getElementById('content-wrapper')
       const empty = document.getElementById('empty')
+
+      if(type === 'missing-fonts') {
+        document.getElementById('missing-fonts-alert').removeAttribute('hidden')
+        // document.getElementById('load-base-styles').setAttribute('disabled', true)
+      }
 
       if (type === 'selection-changed') {
         document.getElementById('selected-count').innerHTML = selectionLength
@@ -281,5 +302,7 @@
     //     postMessage({ type: 'search-all-pages-off' })
     //   }
     // }
+
+    
   </script>
 </body>
