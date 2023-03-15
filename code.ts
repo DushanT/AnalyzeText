@@ -66,7 +66,7 @@ if (figma.editorType === 'figma') {
     figma.ui.postMessage({
       type: 'clear-styles',
     })
-    figma.ui.resize(350, 150)
+    figma.ui.resize(350, 200)
   }
 
   // Check if style matches node styles
