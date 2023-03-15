@@ -139,12 +139,12 @@
   <section id="empty" class="m-small">
     <h2 class="type--small mb-xsmall">Loading styles</h2>
     <p>First you need to select text with text styles applied</p>
-    <p id="missing-fonts-alert" class="alert p-xxsmall bar bar--stretch" hidden>
+    <!-- <p id="missing-fonts-alert" class="alert p-xxsmall bar bar--stretch" hidden>
       <span class="icon icon--warning"></span>
       <span>
         You have missing fonts in this file. Please load all the neccessary fonts and try again.
       </span>
-    </p>
+    </p> -->
     <button class='button button--primary' id="load-base-styles">Load styles from selection</button>
   </section>
   <section id="content-wrapper" hidden>
@@ -160,12 +160,6 @@
           <span class="icon icon--trash"></span>
         </button>
       </div>
-      <!-- <div class="checkbox mb-xxsmall">
-        <input id="search-all-pages" type="checkbox" class="checkbox__box">
-        <label for="search-all-pages" class="checkbox__label">Search all pages <span
-            class="icon icon--warning tooltip-wide"
-            data-tooltip="Search in all pages can freeze your figma file for a few minutes"></span></label>
-      </div> -->
       <div class="grid-2">
         <button class='button button--secondary tooltip-wide' id="find-matching-style-nodes"
           data-tooltip="Find equally styled nodes for selected style">Find equal</button>
@@ -215,10 +209,10 @@
       const contentWrapper = document.getElementById('content-wrapper')
       const empty = document.getElementById('empty')
 
-      if (type === 'missing-fonts') {
-        document.getElementById('missing-fonts-alert').removeAttribute('hidden')
-        // document.getElementById('load-base-styles').setAttribute('disabled', true)
-      }
+      // if (type === 'missing-fonts') {
+      //   document.getElementById('missing-fonts-alert').removeAttribute('hidden')
+      //   // document.getElementById('load-base-styles').setAttribute('disabled', true)
+      // }
 
       if (type === 'selection-changed') {
         document.getElementById('selected-count').innerHTML = selectionLength
