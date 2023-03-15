@@ -19,10 +19,11 @@ if (figma.editorType === 'figma') {
 
   // @ts-ignore
   const isTextWithEmptyStyleId = node => node.type === 'TEXT' && node.textStyleId === ''
+  const isTextWithStyleId = node => node.type === 'TEXT' && node.textStyleId
 
   // Initialize data from client storage
   const init = async () => {
-    if(figma.hasMissingFont) {
+    if (figma.hasMissingFont) {
       figma.ui.postMessage({
         type: 'missing-fonts'
       })
@@ -36,11 +37,22 @@ if (figma.editorType === 'figma') {
       figma.ui.resize(350, 450)
     }
   }
-  
+
   // Save style data to client storage
   const loadStyles = () => {
-    const textNodes = figma.currentPage.selection.filter(node => node.type === 'TEXT' && node.textStyleId)
+    const textNodes = figma.currentPage.selection
+      // @ts-ignore
+      .reduce((acc, node) => {
+        // @ts-ignore
+        return [...acc, ...(node.children ? node.findAll(isTextWithStyleId) : [node])]
+      }, [])
+      // @ts-ignore
+      .filter((node, index, array) => {
+        // @ts-ignore
+        return array.findIndex(n => n.textStyleId === node.textStyleId) === index && isTextWithStyleId(node)
+      })
     if (textNodes.length > 0) {
+      // @ts-ignore
       const styles = textNodes.map((node) => ({
         // @ts-ignore
         id: node.textStyleId,
@@ -53,6 +65,7 @@ if (figma.editorType === 'figma') {
         styles
       })
       figma.ui.resize(350, 450)
+      figma.notify(`Done loading! Unique styles loaded: ${textNodes.length}`)
     } else {
       figma.notify('You have to select text nodes with styles', {
         error: true
@@ -147,9 +160,9 @@ if (figma.editorType === 'figma') {
     if (textSegments.length > 1) {
       // repair mixed text decoration after style update
       // NOT WORKING IF NOT LOADED FONTS
-        textSegments.map(segment => {
-          node.setRangeTextDecoration(segment.start, segment.end, segment.textDecoration)
-        })
+      textSegments.map(segment => {
+        node.setRangeTextDecoration(segment.start, segment.end, segment.textDecoration)
+      })
     }
   }
 
