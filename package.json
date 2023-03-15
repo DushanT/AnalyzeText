@@ -1,5 +1,5 @@
 {
-  "name": "figma-analyze-text-plugin",
+  "name": "figma-text-fix-plugin",
   "version": "0.0.1",
   "description": "Repair detached text nodes",
   "main": "code.js",

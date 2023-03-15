@@ -8,13 +8,14 @@ if (figma.editorType === 'figma') {
   // This shows the HTML page in "ui.html".
   figma.showUI(__html__, {
     themeColors: true,
-    title: 'AnalyzeText Plugin',
-    width: 300,
-    height: 600
+    title: 'TextFix',
+    width: 350,
   });
 
   // For storing data about library styles
   let styles: { id: string, name: string }[] = []
+
+  let searchAllPages = false
 
   // Initialize data from client storage
   const init = async () => {
@@ -24,6 +25,7 @@ if (figma.editorType === 'figma') {
         type: 'loaded-styles',
         styles
       })
+      figma.ui.resize(350, 410)
     }
   }
 
@@ -42,6 +44,7 @@ if (figma.editorType === 'figma') {
         type: 'loaded-styles',
         styles
       })
+      figma.ui.resize(350, 410)
     } else {
       figma.notify('You have to select text nodes with styles', {
         error: true
@@ -55,6 +58,7 @@ if (figma.editorType === 'figma') {
     figma.ui.postMessage({
       type: 'clear-styles',
     })
+    figma.ui.resize(350, 150)
   }
 
   // Check if style matches node styles
@@ -176,6 +180,22 @@ if (figma.editorType === 'figma') {
     figma.notify(`Done searching! Selected nodes: ${noStyleTexts.length}`)
   }
 
+  // Find nodes without styles
+  const findAllNodesWithoutStyles = () => {
+    let countNodes = 0
+    let countPages = 0
+
+    figma.root.children.forEach(page => {
+      const nodes = page.findAll(node => node.type === 'TEXT' && node.textStyleId === '')
+      page.selection = nodes
+      countNodes += nodes.length
+      if (countNodes > 0) {
+        countPages += 1
+      }
+    })
+    figma.notify(`Done searching! Selected nodes: ${countNodes}, Pages with selections: ${countPages}`)
+  }
+
   // Find nodes with mixed styles (only textDecoration)
   const findNodesWithMixedStyles = () => {
     const mixedStyleTexts = figma.currentPage.findAll(node => node.type === 'TEXT' && node.textStyleId === '' && typeof node.textDecoration !== 'string')
@@ -184,13 +204,27 @@ if (figma.editorType === 'figma') {
     figma.notify(`Done searching! Selected nodes: ${mixedStyleTexts.length}`)
   }
 
+  const findMatchingStyleNodes = (styleId: string) => {
+    const style = figma.getStyleById(styleId)
+    const nodes = figma.currentPage
+      .findAll(node => node.type === 'TEXT' && node.textStyleId === '')
+      .filter(node => {
+        checkEquality(style, node)
+      })
+    figma.currentPage.selection = nodes
+    figma.viewport.scrollAndZoomIntoView(figma.currentPage.selection)
+    figma.notify(`Done searching! Selected nodes: ${nodes.length}`)
+  }
+
   // Find node style and apply it
   // @ts-ignore
   const findAndApplyStyle = (node) => {
     const styleId = findMatchingStyle(node)
     if (styleId) {
       applyStyle(styleId, node)
+      return true
     }
+    return false
   }
 
   // Repair nodes with mixed styles
@@ -202,26 +236,44 @@ if (figma.editorType === 'figma') {
     figma.notify(`Done repairing! Nodes repaired: ${nodes.length}`)
   }
 
-  // Replace detached nodes
-  const replaceDetached = (wrapperNode = figma.currentPage) => {
+  // fix detached nodes
+  const fixDetached = (wrapperNode = figma.currentPage) => {
+    let countSuccessful = 0
     const nodes = wrapperNode
       .findAll(node => node.type === 'TEXT' && node.textStyleId === '')
     nodes
       .forEach(node => {
-        findAndApplyStyle(node)
+        if(findAndApplyStyle(node)) {
+          countSuccessful += 1
+        }
       })
-    figma.notify(`Done replacing! Nodes processed: ${nodes.length}`)
+    figma.notify(`Done replacing! Processed: ${nodes.length}, Replaced: ${countSuccessful}`)
   }
 
-  // Replace all pages detached nodes
-  const replaceAllDetached = () => {
+  // fix all pages detached nodes
+  const fixAllDetached = () => {
     // @ts-ignore
-    replaceDetached(figma.root)
+    fixDetached(figma.root)
   }
 
-  // Replace current page detached nodes
-  const replaceCurrentDetached = () => {
-    replaceDetached(figma.currentPage)
+  // fix current page detached nodes
+  const fixCurrentDetached = () => {
+    fixDetached(figma.currentPage)
+  }
+
+  // fix current page detached nodes
+  const fixSelected = () => {
+    let countProcessed = 0
+    figma.currentPage.selection.forEach(node => {
+      if(findAndApplyStyle(node)) {
+        countProcessed += 1
+      }
+    })
+    if(figma.currentPage.selection) {
+      figma.notify(`Done replacing! Nodes processed: ${figma.currentPage.selection.length}, Nodes fixed: ${countProcessed}`)
+    } else {
+      figma.notify('You have to select something to apply styles', { error: true })
+    }
   }
 
   let zoomTargetId = 0
@@ -238,7 +290,7 @@ if (figma.editorType === 'figma') {
         setTimeout(() => {
           target.fills = currentFills
         }, 300)
-      }, 200)
+      }, 150)
     }, 300)
   }
 
@@ -257,6 +309,18 @@ if (figma.editorType === 'figma') {
   }
 
   init()
+
+  figma.on('currentpagechange', () => {
+    zoomTargetId = 0
+  })
+
+  figma.on('selectionchange', () => {
+    const selectionLength = figma.currentPage.selection.length
+    figma.ui.postMessage({
+      type: 'selection-changed',
+      selectionLength
+    })
+  })
 
   // Calls to "parent.postMessage" from within the HTML page will trigger this
   // callback. The callback will be passed the "pluginMessage" property of the
@@ -287,8 +351,14 @@ if (figma.editorType === 'figma') {
       case 'find-no-style-nodes':
         findNodesWithoutStyles();
         break;
+      case 'find-all-no-style-nodes':
+        findAllNodesWithoutStyles();
+        break;
       case 'find-mixed-style-nodes':
         findNodesWithMixedStyles();
+        break;
+      case 'find-matching-style-nodes':
+        findMatchingStyleNodes(msg.id);
         break;
       case 'zoom-prev':
         zoomTo(-1);
@@ -299,11 +369,20 @@ if (figma.editorType === 'figma') {
       case 'repair-mixed':
         repairNodesWithMixedStyle();
         break;
-      case 'replace-all-detached':
-        replaceAllDetached();
+      case 'fix-selected':
+        fixSelected()
         break;
-      case 'replace-current-detached':
-        replaceCurrentDetached();
+      case 'fix-all-detached':
+        fixAllDetached();
+        break;
+      case 'fix-current-detached':
+        fixCurrentDetached();
+        break;
+      case 'search-all-pages-on':
+        searchAllPages = true
+        break;
+      case 'search-all-pages-off':
+        searchAllPages = false
         break;
       case 'close':
         // Make sure to close the plugin when you're done. Otherwise the plugin will
