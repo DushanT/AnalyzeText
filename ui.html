@@ -38,6 +38,7 @@
       background-color: var(--figma-color-bg);
       color: var(--figma-color-text);
     }
+
     hr {
       border: 0;
       border-bottom: 1px solid var(--figma-color-border);
@@ -54,6 +55,7 @@
       justify-content: center;
       cursor: pointer;
     }
+
     .button:disabled {
       cursor: default;
     }
@@ -74,13 +76,13 @@
       justify-content: space-between;
     }
 
-    .grid-2-2 {
+    .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
     }
 
-    .grid-item--fullwidth {
+    .grid-2-item--fullwidth {
       grid-column: span 2;
     }
 
@@ -122,9 +124,11 @@
     [data-tooltip] {
       position: relative;
     }
+
     .alert {
       background: var(--figma-color-bg-warning);
     }
+
     [hidden] {
       display: none;
     }
@@ -132,7 +136,6 @@
 </head>
 
 <body class="type--small">
-  
   <section id="empty" class="m-small">
     <h2 class="type--small mb-xsmall">Loading styles</h2>
     <p>First you need to select text with text styles applied</p>
@@ -145,7 +148,6 @@
     <button class='button button--primary' id="load-base-styles">Load styles from selection</button>
   </section>
   <section id="content-wrapper" hidden>
-
     <section class="m-small">
       <h2 class="type--small mb-xsmall">Loaded styles</h2>
 
@@ -164,15 +166,15 @@
             class="icon icon--warning tooltip-wide"
             data-tooltip="Search in all pages can freeze your figma file for a few minutes"></span></label>
       </div> -->
-      <div class="grid-2-2">
+      <div class="grid-2">
         <button class='button button--secondary tooltip-wide' id="find-matching-style-nodes"
           data-tooltip="Find equally styled nodes for selected style">Find equal</button>
         <button class='button button--secondary tooltip-wide' id="find-no-style-nodes"
           data-tooltip="Find nodes without style applied">Find empty</button>
-        <button class="button button--primary tooltip-wide" id="fix-selected"
+        <button class="button button--primary tooltip-wide grid-2-item--fullwidth" id="apply-style"
+          data-tooltip="Apply selected style to selected nodes">Apply style</button>
+        <button class="button button--primary tooltip-wide grid-2-item--fullwidth" id="fix-selected"
           data-tooltip="Fix detached styles in selected nodes">Fix selected</button>
-        <button class="button button--primary tooltip-wide" id="apply-style"
-          data-tooltip="Apply selected style to selected nodes">Apply selected style</button>
       </div>
     </section>
     <section class="m-small">
@@ -191,12 +193,14 @@
     <hr>
     <section class="m-small">
       <h2 class="type--small mb-xxsmall">Find and fix all</h2>
-      <div class="grid-2-2">
+      <div class="grid-2">
         <button class="button button--primary tooltip-wide" id="fix-current-detached"
           data-tooltip="Fix all detached text nodes in current page">Fix current page</button>
         <button class="button button--primary-destructive tooltip-wide" id="fix-all-detached"
-          data-tooltip="Fix all detached text nodes in all pages (Warning: This action can freeze your figma for a few minutes!)">Fix all pages</button>
+          data-tooltip="Fix all detached text nodes in all pages (Warning: This action can freeze your figma for a few minutes!)">Fix
+          all pages</button>
       </div>
+
     </section>
 
   </section>
@@ -211,7 +215,7 @@
       const contentWrapper = document.getElementById('content-wrapper')
       const empty = document.getElementById('empty')
 
-      if(type === 'missing-fonts') {
+      if (type === 'missing-fonts') {
         document.getElementById('missing-fonts-alert').removeAttribute('hidden')
         // document.getElementById('load-base-styles').setAttribute('disabled', true)
       }
@@ -303,6 +307,6 @@
     //   }
     // }
 
-    
+
   </script>
 </body>

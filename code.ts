@@ -17,6 +17,9 @@ if (figma.editorType === 'figma') {
 
   let searchAllPages = false
 
+  // @ts-ignore
+  const isTextWithEmptyStyleId = node => node.type === 'TEXT' && node.textStyleId === ''
+
   // Initialize data from client storage
   const init = async () => {
     if(figma.hasMissingFont) {
@@ -30,7 +33,7 @@ if (figma.editorType === 'figma') {
         type: 'loaded-styles',
         styles
       })
-      figma.ui.resize(350, 410)
+      figma.ui.resize(350, 450)
     }
   }
   
@@ -49,7 +52,7 @@ if (figma.editorType === 'figma') {
         type: 'loaded-styles',
         styles
       })
-      figma.ui.resize(350, 410)
+      figma.ui.resize(350, 450)
     } else {
       figma.notify('You have to select text nodes with styles', {
         error: true
@@ -104,7 +107,7 @@ if (figma.editorType === 'figma') {
       return
     }
 
-    const nodes = wrapperNode.findAll(node => node.type === 'TEXT' && node.textStyleId === '')
+    const nodes = wrapperNode.findAll(node => isTextWithEmptyStyleId(node))
     const matchingNodes = nodes.filter(node => checkEquality(style, node))
 
     figma.currentPage.selection = matchingNodes
@@ -179,7 +182,7 @@ if (figma.editorType === 'figma') {
 
   // Find nodes without styles
   const findNodesWithoutStyles = () => {
-    const noStyleTexts = figma.currentPage.findAll(node => node.type === 'TEXT' && node.textStyleId === '')
+    const noStyleTexts = figma.currentPage.findAll(node => isTextWithEmptyStyleId(node))
     figma.currentPage.selection = noStyleTexts
     figma.viewport.scrollAndZoomIntoView(figma.currentPage.selection)
     figma.notify(`Done searching! Selected nodes: ${noStyleTexts.length}`)
@@ -191,7 +194,7 @@ if (figma.editorType === 'figma') {
     let countPages = 0
 
     figma.root.children.forEach(page => {
-      const nodes = page.findAll(node => node.type === 'TEXT' && node.textStyleId === '')
+      const nodes = page.findAll(node => isTextWithEmptyStyleId(node))
       page.selection = nodes
       countNodes += nodes.length
       if (countNodes > 0) {
@@ -203,7 +206,8 @@ if (figma.editorType === 'figma') {
 
   // Find nodes with mixed styles (only textDecoration)
   const findNodesWithMixedStyles = () => {
-    const mixedStyleTexts = figma.currentPage.findAll(node => node.type === 'TEXT' && node.textStyleId === '' && typeof node.textDecoration !== 'string')
+    // @ts-ignore
+    const mixedStyleTexts = figma.currentPage.findAll(node => isTextWithEmptyStyleId(node) && typeof node.textDecoration !== 'string')
     figma.currentPage.selection = mixedStyleTexts
     figma.viewport.scrollAndZoomIntoView(figma.currentPage.selection)
     figma.notify(`Done searching! Selected nodes: ${mixedStyleTexts.length}`)
@@ -212,7 +216,7 @@ if (figma.editorType === 'figma') {
   const findMatchingStyleNodes = (styleId: string) => {
     const style = figma.getStyleById(styleId)
     const nodes = figma.currentPage
-      .findAll(node => node.type === 'TEXT' && node.textStyleId === '')
+      .findAll(node => isTextWithEmptyStyleId(node))
       .filter(node => checkEquality(style, node))
     figma.currentPage.selection = nodes
     figma.viewport.scrollAndZoomIntoView(figma.currentPage.selection)
@@ -232,7 +236,8 @@ if (figma.editorType === 'figma') {
 
   // Repair nodes with mixed styles
   const repairNodesWithMixedStyle = () => {
-    const nodes = figma.currentPage.findAll(node => node.type === 'TEXT' && node.textStyleId === '' && typeof node.textDecoration !== 'string')
+    // @ts-ignore
+    const nodes = figma.currentPage.findAll(node => isTextWithEmptyStyleId(node) && typeof node.textDecoration !== 'string')
     nodes.forEach(node => {
       findAndApplyStyle(node)
     })
@@ -243,7 +248,7 @@ if (figma.editorType === 'figma') {
   const fixDetached = (wrapperNode = figma.currentPage) => {
     let countSuccessful = 0
     const nodes = wrapperNode
-      .findAll(node => node.type === 'TEXT' && node.textStyleId === '')
+      .findAll(node => isTextWithEmptyStyleId(node))
     nodes
       .forEach(node => {
         if (findAndApplyStyle(node)) {
@@ -268,11 +273,11 @@ if (figma.editorType === 'figma') {
   const fixSelected = () => {
     let countProcessed = 0
     figma.currentPage.selection.forEach(node => {
-      if (findAndApplyStyle(node)) {
+      if (isTextWithEmptyStyleId(node) && findAndApplyStyle(node)) {
         countProcessed += 1
       }
     })
-    if (figma.currentPage.selection) {
+    if (figma.currentPage.selection.length > 0) {
       figma.notify(`Done replacing! Nodes processed: ${figma.currentPage.selection.length}, Nodes fixed: ${countProcessed}`)
     } else {
       figma.notify('You have to select something to apply styles', { error: true })
