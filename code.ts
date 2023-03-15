@@ -19,6 +19,7 @@ if (figma.editorType === 'figma') {
 
   // @ts-ignore
   const isTextWithEmptyStyleId = node => node.type === 'TEXT' && node.textStyleId === ''
+  // @ts-ignore
   const isTextWithStyleId = node => node.type === 'TEXT' && node.textStyleId
 
   // Initialize data from client storage
