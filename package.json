@@ -1,5 +1,5 @@
 {
-  "name": "figma-text-fix-plugin",
+  "name": "figma-text-styles-fixer-plugin",
   "version": "0.0.1",
   "description": "Repair detached text nodes",
   "main": "code.js",

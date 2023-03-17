@@ -8,12 +8,12 @@ if (figma.editorType === 'figma') {
   // This shows the HTML page in "ui.html".
   figma.showUI(__html__, {
     themeColors: true,
-    title: 'TextFix',
-    width: 350,
+    width: 400,
   });
 
+  type CustomStyle = { id: string, name: string, fontName: { family: string, style: string } }
   // For storing data about library styles
-  let styles: { id: string, name: string }[] = []
+  let styles: CustomStyle[] = []
 
   // @ts-ignore
   const isTextNode = node => node.type === 'TEXT'
@@ -38,14 +38,29 @@ if (figma.editorType === 'figma') {
       try {
         await Promise.all(
           // @ts-ignore
-          styles.map(style => figma.loadFontAsync(style.fontName))
+          styles.filter(style => !!style.fontName)
+            .map(style => figma.loadFontAsync(style.fontName))
         )
-      } catch(err) {
+      } catch (err) {
         console.error(`Error loading fonts: ${err}`);
         figma.notify(`Error loading fonts: ${err}`, { error: true })
       }
-      figma.ui.resize(350, 450)
+      figma.ui.resize(400, 700)
     }
+  }
+
+  const notifyStart = () => {
+    figma.notify(`Process started. Your figma file can freeze for a few minutes/moments based on number of nodes processed. Please wait...`)
+  }
+
+  const processStyles = (styles: CustomStyle[], count: number) => {
+    figma.clientStorage.setAsync('styles', JSON.stringify(styles))
+    figma.ui.postMessage({
+      type: 'loaded-styles',
+      styles
+    })
+    figma.ui.resize(400, 700)
+    figma.notify(`Done loading! Unique styles loaded: ${count}`)
   }
 
   // Save style data to client storage
@@ -71,18 +86,29 @@ if (figma.editorType === 'figma') {
         name: figma.getStyleById(node.textStyleId)?.name,
         fontName: node.fontName
       }))
-      figma.clientStorage.setAsync('styles', JSON.stringify(styles))
-      figma.ui.postMessage({
-        type: 'loaded-styles',
-        styles
-      })
-      figma.ui.resize(350, 450)
-      figma.notify(`Done loading! Unique styles loaded: ${textNodes.length}`)
+      processStyles(styles, textNodes.length)
     } else {
       figma.notify('You have to select text nodes with styles', {
         error: true
       })
     }
+  }
+
+  const loadLocalStyles = () => {
+    const localTextStyles = figma.getLocalTextStyles()
+    if (localTextStyles.length === 0) {
+      figma.notify(`This file has not local styles to be found. You can import files from library and use selection instead, or define local styles and try again.`, { error: true })
+      return
+    }
+
+    const styles = localTextStyles.map((style) => ({
+      // @ts-ignore
+      id: style.id,
+      // @ts-ignore
+      name: style.name,
+      fontName: style.fontName,
+    }))
+    processStyles(styles, localTextStyles.length)
   }
 
   // Delete styles client storage data
@@ -91,7 +117,7 @@ if (figma.editorType === 'figma') {
     figma.ui.postMessage({
       type: 'clear-styles',
     })
-    figma.ui.resize(350, 200)
+    figma.ui.resize(400, 200)
   }
 
   // Check if style matches node styles
@@ -108,34 +134,9 @@ if (figma.editorType === 'figma') {
       style.paragraphIndent === node.paragraphIndent &&
       style.paragraphSpacing === node.paragraphSpacing &&
       style.textCase === node.textCase &&
-      // // text decoration can be broken cause of mixed styles applied to text
-      // // for example text with some part manually underlined
-      // !!! Changing text segments always detach text style from text, this is useless
-      // !!! We should leave the manually adjusted text detached or not manually 
-      // !!! change underlines and boldes inside text nodes
-      // (
-      //   style.textDecoration === node.textDecoration || (
-      //     typeof node.textDecoration !== 'string' &&
-      //     node.getStyledTextSegments(['textDecoration'])?.length > 1
-      //   )
-      // ) &&
-      // (
-      //   (
-      //     style.fontName.family === node.fontName.family &&
-      //     style.fontName.style === node.fontName.style    
-      //   ) || 
-      //   (
-      //     typeof node.fontName !== 'string' &&
-      //     node.getStyledTextSegments(['fontName'])?.length > 1
-      //   )
-      // )
-      /** 
-       * if someone changes part of the text to underline it's not possible 
-       * to attach a text style to this node because text properties are mixed
-       */ 
-      style.textDecoration === node.textDecoration && 
+      style.textDecoration === node.textDecoration &&
       style.fontName.family === node.fontName.family &&
-      style.fontName.style === node.fontName.style  
+      style.fontName.style === node.fontName.style
     )
   }
 
@@ -181,18 +182,7 @@ if (figma.editorType === 'figma') {
 
   // Apply styles to node by style id
   const applyStyle = (id: string, node: TextNode) => {
-    // const textSegments = node.getStyledTextSegments(['listOptions', 'textCase', 'textDecoration', 'fontName'])
     node.textStyleId = id
-    // !!! Changing text segments always detach text style from text, this is useless 
-    // !!! because if we change text segments it will detach the style again
-    // if (textSegments.length > 1) {
-    //   textSegments.map(segment => {
-    //     node.setRangeListOptions(segment.start, segment.end, segment.listOptions)
-    //     node.setRangeTextDecoration(segment.start, segment.end, segment.textDecoration)
-    //     node.setRangeTextCase(segment.start, segment.end, segment.textCase)
-    //     node.setRangeFontName(segment.start, segment.end, segment.fontName)
-    //   })
-    // }
   }
 
   // Apply style to current page selection
@@ -238,6 +228,7 @@ if (figma.editorType === 'figma') {
 
   // fix detached nodes
   const fixDetached = (wrapperNode = figma.currentPage) => {
+    notifyStart()
     let countSuccessful = 0
     const nodes = wrapperNode
       .findAll(node => isTextWithEmptyStyleId(node))
@@ -316,10 +307,26 @@ if (figma.editorType === 'figma') {
   })
 
   figma.on('selectionchange', () => {
-    const selectionLength = figma.currentPage.selection.length
+    const currentSelection = figma.currentPage.selection
+    const selectionLength = currentSelection.length
+    let selectedStyle = ''
+    if (selectionLength === 1) {
+      const node = currentSelection[0]
+      if (isTextWithStyleId(node)) {
+        // @ts-ignore
+        selectedStyle = figma.getStyleById(node.textStyleId)?.name || 'unknown'
+      } else {
+        selectedStyle = 'unknown'
+      }
+    } else if (selectionLength === 0) {
+      selectedStyle = 'none'
+    } else {
+      selectedStyle = 'mixed'
+    }
     figma.ui.postMessage({
       type: 'selection-changed',
-      selectionLength
+      selectionLength,
+      selectedStyle
     })
   })
 
@@ -333,6 +340,9 @@ if (figma.editorType === 'figma') {
     switch (msg.type) {
       case 'load-base-styles':
         loadStyles();
+        break;
+      case 'load-local-styles':
+        loadLocalStyles();
         break;
       case 'clear-base-styles':
         clearStyles();

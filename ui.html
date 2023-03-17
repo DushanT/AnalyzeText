@@ -2,7 +2,6 @@
 
 <head>
   <meta charset="utf-8">
-  <title>TextFix</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/thomas-lowry/figma-plugin-ds/dist/figma-plugin-ds.css">
   <style>
     ul {
@@ -71,6 +70,13 @@
       align-items: center;
     }
 
+    .bar--narrow {
+      gap: 0;
+    }
+    .bar--nowrap {
+      flex-wrap: nowrap;
+    }
+
     .bar--stretch {
       flex-wrap: nowrap;
       justify-content: space-between;
@@ -128,30 +134,85 @@
     .alert {
       background: var(--figma-color-bg-warning);
     }
+    .icon-button,
+    .select-menu__button {
+      border-radius: 5px;
+    }
 
     [hidden] {
       display: none;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .figma-light .text--grey,
+    .figma-light .text--grey a {
+      color: #7F7F7F;
+    }
+
+    .figma-dark .text--grey,
+    .figma-dark .text--grey a {
+      color: #9C9C9C;
+    }
+    .figma-dark .text--grey .icon {
+      filter: invert(0.5);
+    }
+    .figma-dark .icon:not(.icon--warning-orange) {
+      filter: invert(1);
+    }
+    .figma-dark .icon-button {
+      background: #686868;
+    }
+    .figma-dark .select-menu__button {
+      background-color: #373737;
+    }
+    .figma-dark .select-menu__label {
+      color: var(--figma-color-text);
+    }
+    .figma-dark .select-menu__caret {
+      filter: invert(1);
+    }
+    .button--secondary {
+      background-color: var(--figma-color-bg);
+      color: var(--figma-color-text);
+      border-color: var(--figma-color-text);
+    }
+    .flip-h {
+      transform: scaleX(-1);
+    }
+    h2 {
+      font-size: 1rem;
+    }
+    .icon--warning-orange {
+      background-image: url("data:image/svg+xml;charset=utf8,%3Csvg fill='none' height='32' width='32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath clip-rule='evenodd' d='M16 9l8 14H8zm-1 8.5V14h2v3.5zm0 1.5v2h2v-2z' fill='%23f00' fill-rule='evenodd'/%3E%3C/svg%3E");
     }
   </style>
 </head>
 
 <body class="type--small">
   <section id="empty" class="m-small">
-    <h2 class="type--small mb-xsmall">Loading styles</h2>
-    <p>First you need to select text with text styles applied</p>
+    <h2 class="mb-xsmall">Loading styles</h2>
+    <p>First you need to select text with text styles applied or load your local styles in this figma file.</p>
     <!-- <p id="missing-fonts-alert" class="alert p-xxsmall bar bar--stretch" hidden>
       <span class="icon icon--warning"></span>
       <span>
         You have missing fonts in this file. Please load all the neccessary fonts and try again.
       </span>
     </p> -->
-    <button class='button button--primary' id="load-base-styles">Load styles from selection</button>
+    <div class="button-group">
+      <button class='button button--secondary' id="load-base-styles">Load styles from selection</button>
+      <button class='button button--secondary' id="load-local-styles">Load local styles</button>
+    </div>
   </section>
   <section id="content-wrapper" hidden>
     <section class="m-small">
-      <h2 class="type--small mb-xsmall">Loaded styles</h2>
+      <h2 class="mb-xsmall">Loaded styles</h2>
 
-      <label for="select-style" class="mb-xsmall">Selected comparison style</label>
+      <div class="mb-xxsmall type--medium ">
+        <label for="select-style">Selected comparison style</label>
+      </div>
       <div class="bar mb-xxsmall">
         <select id="select-style" class="select-menu">
         </select>
@@ -160,52 +221,91 @@
           <span class="icon icon--trash"></span>
         </button>
       </div>
-      <div class="grid-2">
+      <p class="mb-xxsmall ">Find equally styled nodes for selected style</p>
+      <div class="bar mb-small">
         <button class='button button--secondary tooltip-wide' id="find-matching-style-nodes"
           data-tooltip="Find equally styled nodes for selected style">Find equal</button>
-        <button class='button button--secondary tooltip-wide' id="find-no-style-nodes"
-          data-tooltip="Find nodes without style applied">Find empty</button>
         <button class="button button--primary tooltip-wide grid-2-item--fullwidth" id="apply-style"
           data-tooltip="Apply selected style to selected nodes">Apply style</button>
+      </div>
+      <p class="mb-xxsmall ">Find nodes without style applied</p>
+      <div class="bar mb-small">
+        <button class='button button--secondary tooltip-wide' id="find-no-style-nodes"
+          data-tooltip="Find nodes without style applied">Find empty</button>
         <button class="button button--primary tooltip-wide grid-2-item--fullwidth" id="fix-selected"
           data-tooltip="Fix detached styles in selected nodes">Fix selected</button>
       </div>
     </section>
     <section class="m-small">
-      <h2 class="type--small mb-xsmall">Traverse selection</h2>
+      <h2 class="mb-xsmall">Traverse selection</h2>
       <div class="bar bar--stretch">
         <button class='icon-button' id="zoom-prev" aria-label="Zoom to previous node"
           data-tooltip="Zoom to previous node">
-          <span class="icon icon--caret-left"></span>
+          <span class="icon icon--back"></span>
         </button>
-        <p>Selected (<span id="selected-count">0</span>)</p>
+        <div>
+          <div class="text-center ">Selected (<span id="selected-count">0</span>)</div>
+          <div class="text-center ">Selected style: <span id="selected-style">none</span></div>
+        </div>
         <button class='icon-button' id="zoom-next" aria-label="Zoom to next node" data-tooltip="Zoom to next node">
-          <span class="icon icon--caret-right"></span>
+          <span class="icon icon--back flip-h"></span>
         </button>
       </div>
     </section>
     <hr>
     <section class="m-small">
-      <h2 class="type--small mb-xxsmall">Find and fix all</h2>
-      <div class="grid-2">
+      <h2 class="mb-xsmall">Find and Fix all</h2>
+      <section class="mb-xsmall">
+        <div class="mb-xxsmall">detached text nodes on current page based on loaded styles</div>
         <button class="button button--primary tooltip-wide" id="fix-current-detached"
           data-tooltip="Fix all detached text nodes in current page">Fix current page</button>
+      </section>
+      <hr>
+      <section>
+        <div >detached text nodes in all pages based on loaded styles</div>
+        <div class="bar bar--narrow bar--nowrap type--xsmall">
+          <span class="icon icon--warning-orange"></span> <span class="text--grey">This action can freeze your figma for a few minutes!</span>
+        </div>
         <button class="button button--primary-destructive tooltip-wide" id="fix-all-detached"
           data-tooltip="Fix all detached text nodes in all pages (Warning: This action can freeze your figma for a few minutes!)">Fix
           all pages</button>
-      </div>
-
+      </section>
     </section>
-
+    <section class="m-small">
+      <div class="bar bar--stretch type--xsmall text--grey">
+        <p>Made by <a href="#">Dušan</a> and <a href="#">Lukáš</a><br>from <a href="#">Lighting Beetle*</a></p>
+        <a href="https://google.com" class="bar bar--narrow bar--nowrap"><span class="icon icon--warning"></span> <span>Support this plugin</span></a>
+      </div>
+    </section>
   </section>
   <script src="https://cdn.jsdelivr.net/gh/thomas-lowry/figma-plugin-ds/dist/iife/figma-plugin-ds.js"></script>
   <script>
 
+    const updateSelectElement = (selectElement, styles) => {
+      selectElement.innerHTML = `${styles.sort((a, b) => {
+        if (a.name < b.name) {
+          return -1;
+        }
+        if (a.name > b.name) {
+          return 1;
+        }
+        return 0;
+      }).map(style => `<option value="${style.id}">${style.name}</option>`)}`
+    }
+
+    const updateSelectedCount = count => {
+      document.getElementById('selected-count').innerHTML = count
+    }
+
+    const updateSelectedStyle = style => {
+      document.getElementById('selected-style').innerHTML = style
+    }
+
     window.onmessage = event => {
       const msg = event.data.pluginMessage
-      const { type, styles, message, selectionLength } = msg
+      const { type, styles, message, selectionLength, selectedStyle } = msg
 
-      const selectStyle = document.getElementById('select-style')
+      const selectElement = document.getElementById('select-style')
       const contentWrapper = document.getElementById('content-wrapper')
       const empty = document.getElementById('empty')
 
@@ -215,20 +315,12 @@
       // }
 
       if (type === 'selection-changed') {
-        document.getElementById('selected-count').innerHTML = selectionLength
+        updateSelectedCount(selectionLength)
+        updateSelectedStyle(selectedStyle)
       }
 
       if (type === 'loaded-styles') {
-        selectStyle.innerHTML = `${styles.sort((a, b) => {
-          if (a.name < b.name) {
-            return -1;
-          }
-          if (a.name > b.name) {
-            return 1;
-          }
-
-          return 0;
-        }).map(style => `<option value="${style.id}">${style.name}</option>`)}`
+        updateSelectElement(selectElement, styles)
 
         empty.setAttribute('hidden', true)
         contentWrapper.removeAttribute('hidden')
@@ -241,7 +333,7 @@
         //uninitialize all select menus
         selectMenu.destroy();
 
-        selectStyle.innerHTML = ''
+        selectElement.innerHTML = ''
         contentWrapper.setAttribute('hidden', true)
         empty.removeAttribute('hidden')
       }
@@ -265,6 +357,7 @@
 
     const buttonIds = [
       'load-base-styles',
+      'load-local-styles',
       'clear-base-styles',
       'find-no-style-nodes',
       'zoom-prev',
