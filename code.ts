@@ -5,10 +5,15 @@
 // Runs this code if the plugin is run in Figma
 if (figma.editorType === 'figma') {
 
+  // constants
+  const UI_WIDTH = 400;
+  const UI_HEIGHT_SHORT = 200;
+  const UI_HEIGHT_TALL = 700;
+
   // This shows the HTML page in "ui.html".
   figma.showUI(__html__, {
     themeColors: true,
-    width: 400,
+    width: UI_WIDTH,
   });
 
   type CustomStyle = { id: string, name: string, fontName: { family: string, style: string } }
@@ -43,14 +48,19 @@ if (figma.editorType === 'figma') {
         )
       } catch (err) {
         console.error(`Error loading fonts: ${err}`);
-        figma.notify(`Error loading fonts: ${err}`, { error: true })
+        figma.notify(`Error loading fonts: ${err}`, { error: true, timeout: 5000 })
       }
-      figma.ui.resize(400, 700)
+      figma.ui.resize(UI_WIDTH, UI_HEIGHT_TALL)
     }
   }
 
   const notifyStart = () => {
-    figma.notify(`Process started. Your figma file can freeze for a few minutes/moments based on number of nodes processed. Please wait...`)
+    // figma.notify(`Process started. Please wait...`, { })
+  }
+  const postEnd = () => {
+    figma.ui.postMessage({
+      type: 'action-ended',
+    })
   }
 
   const processStyles = (styles: CustomStyle[], count: number) => {
@@ -59,7 +69,7 @@ if (figma.editorType === 'figma') {
       type: 'loaded-styles',
       styles
     })
-    figma.ui.resize(400, 700)
+    figma.ui.resize(UI_WIDTH, UI_HEIGHT_TALL)
     figma.notify(`Done loading! Unique styles loaded: ${count}`)
   }
 
@@ -97,7 +107,7 @@ if (figma.editorType === 'figma') {
   const loadLocalStyles = () => {
     const localTextStyles = figma.getLocalTextStyles()
     if (localTextStyles.length === 0) {
-      figma.notify(`This file has not local styles to be found. You can import files from library and use selection instead, or define local styles and try again.`, { error: true })
+      figma.notify(`This file has not local styles to be found. You can import files from library and use selection instead, or define local styles and try again.`, { error: true, timeout: 2000 })
       return
     }
 
@@ -117,7 +127,7 @@ if (figma.editorType === 'figma') {
     figma.ui.postMessage({
       type: 'clear-styles',
     })
-    figma.ui.resize(400, 200)
+    figma.ui.resize(UI_WIDTH, UI_HEIGHT_SHORT)
   }
 
   // Check if style matches node styles
@@ -143,13 +153,13 @@ if (figma.editorType === 'figma') {
   // Find and select all nodes with equal text styles by style id 
   const findAndSelectNodes = (id: string, wrapperNode = figma.currentPage, zoom = false) => {
     if (!wrapperNode) {
-      figma.notify(`No wrapper defined`, { error: true })
+      figma.notify(`No wrapper defined`, { error: true, timeout: 2000 })
       return
     }
 
     const style = figma.getStyleById(id)
     if (!style) {
-      figma.notify(`No style found for id: ${id}`, { error: true })
+      figma.notify(`No style found for id: ${id}`, { error: true, timeout: 2000 })
       return
     }
 
@@ -193,7 +203,7 @@ if (figma.editorType === 'figma') {
       figma.currentPage.selection.forEach(node => applyStyle(id, node))
       figma.notify(`Done applying styles! Processed nodes: ${processedCount}`)
     } else {
-      figma.notify('You have to select/find some nodes to apply styles', { error: true })
+      figma.notify('You have to select/find some nodes to apply styles', { error: true, timeout: 2000 })
     }
   }
 
@@ -228,7 +238,6 @@ if (figma.editorType === 'figma') {
 
   // fix detached nodes
   const fixDetached = (wrapperNode = figma.currentPage) => {
-    notifyStart()
     let countSuccessful = 0
     const nodes = wrapperNode
       .findAll(node => isTextWithEmptyStyleId(node))
@@ -264,7 +273,7 @@ if (figma.editorType === 'figma') {
     if (countProcessed > 0) {
       figma.notify(`Done replacing! Nodes processed: ${countProcessed}, Nodes fixed: ${countSuccessful}`)
     } else {
-      figma.notify('You have to select something to apply styles', { error: true })
+      figma.notify('You have to select something to apply styles', { error: true, timeout: 2000 })
     }
   }
 
@@ -288,16 +297,24 @@ if (figma.editorType === 'figma') {
 
   // Zoom to node
   const zoomTo = (increment: number) => {
-    const targetId = zoomTargetId + increment
     const sel = figma.currentPage.selection
+    if (sel.length <= 1) {
+      figma.notify('Select multiple elements to traverse between them.', { error: true, timeout: 2000 })
+      return
+    }
+    const targetId = zoomTargetId + increment
     zoomTargetId = targetId < 0 ? (sel.length + targetId) : targetId % sel.length
     const target = sel[zoomTargetId]
     if (target) {
       figma.viewport.scrollAndZoomIntoView([target])
       animateFill(target)
     } else {
-      figma.notify('Noting to zoom in, select something', { error: true })
+      figma.notify('Nothing to zoom in, select something', { error: true, timeout: 2000 })
     }
+  }
+
+  const getNodeTextStyle = (node) => {
+    return figma.getStyleById(node.textStyleId)
   }
 
   init()
@@ -310,17 +327,27 @@ if (figma.editorType === 'figma') {
     const currentSelection = figma.currentPage.selection
     const selectionLength = currentSelection.length
     let selectedStyle = ''
-    if (selectionLength === 1) {
+    if (selectionLength === 0) {
+      selectedStyle = 'none'
+    } else if (selectionLength === 1) {
       const node = currentSelection[0]
       if (isTextWithStyleId(node)) {
         // @ts-ignore
-        selectedStyle = figma.getStyleById(node.textStyleId)?.name || 'unknown'
+        selectedStyle = getNodeTextStyle(node)?.name || 'unknown'
       } else {
         selectedStyle = 'unknown'
       }
-    } else if (selectionLength === 0) {
-      selectedStyle = 'none'
     } else {
+      // const textStyleCount = currentSelection.reduce((styles, node) => {
+      //   const textStyleName = getNodeTextStyle(node)?.name ?? 'unknown'
+      //   const count = Number(styles[textStyleName] || 0);
+      //   return {
+      //     ...styles,
+      //     [textStyleName]: count + 1
+      //   }
+      // }, { unknown: 0 })
+
+      // selectedStyle = Object.keys(textStyleCount).map((name: string) => `<li>${name}: ${textStyleCount[name]}</li>`).join('')
       selectedStyle = 'mixed'
     }
     figma.ui.postMessage({
@@ -337,6 +364,7 @@ if (figma.editorType === 'figma') {
     // One way of distinguishing between different types of messages sent from
     // your HTML page is to use an object with a "type" property like this.
 
+    notifyStart()
     switch (msg.type) {
       case 'load-base-styles':
         loadStyles();
@@ -383,5 +411,7 @@ if (figma.editorType === 'figma') {
         // handle default case
         break;
     }
+    postEnd()
+
   };
 };

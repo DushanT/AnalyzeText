@@ -5,12 +5,14 @@
   "main": "code.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "watch": "npm run build -- --watch"
+    "watch": "npm run build -- --watch",
+    "livereload": "nodemon --ext js,html,json --watch . --exec bash run-plugin.sh"
   },
   "author": "Dušan Tužinský",
   "license": "",
   "devDependencies": {
     "@figma/plugin-typings": "*",
+    "nodemon": "^2.0.21",
     "typescript": "*"
   }
 }

@@ -4,9 +4,10 @@
   <meta charset="utf-8">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/thomas-lowry/figma-plugin-ds/dist/figma-plugin-ds.css">
   <style>
-    ul {
-      padding-left: 0;
-      list-style: none
+    select {
+      height: 32px;
+      border-radius: 4px;
+      flex-grow: 1;
     }
 
     .button-group {
@@ -14,19 +15,6 @@
       flex-wrap: wrap;
       gap: 10px;
       margin-bottom: 20px;
-    }
-
-    .button-group--vertical {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    details summary {
-      margin-bottom: 10px;
-    }
-
-    details> :not(summary) {
-      margin-left: 10px;
     }
 
     .text--danger {
@@ -45,8 +33,7 @@
 
     h1,
     h2,
-    h3,
-    h4 {
+    h3 {
       margin-bottom: 0;
     }
 
@@ -71,8 +58,9 @@
     }
 
     .bar--narrow {
-      gap: 0;
+      gap: 4px;
     }
+
     .bar--nowrap {
       flex-wrap: nowrap;
     }
@@ -134,9 +122,9 @@
     .alert {
       background: var(--figma-color-bg-warning);
     }
-    .icon-button,
-    .select-menu__button {
-      border-radius: 5px;
+
+    .icon-button {
+      border-radius: 4px;
     }
 
     [hidden] {
@@ -156,37 +144,85 @@
     .figma-dark .text--grey a {
       color: #9C9C9C;
     }
+
     .figma-dark .text--grey .icon {
       filter: invert(0.5);
     }
+
     .figma-dark .icon:not(.icon--warning-orange) {
       filter: invert(1);
     }
+
     .figma-dark .icon-button {
       background: #686868;
     }
-    .figma-dark .select-menu__button {
+
+    .figma-dark select {
       background-color: #373737;
-    }
-    .figma-dark .select-menu__label {
       color: var(--figma-color-text);
     }
-    .figma-dark .select-menu__caret {
-      filter: invert(1);
+
+    .icon--dark,
+    .icon--light {
+      display: none;
     }
+
+    .figma-dark .icon--dark {
+      display: inline-block;
+    }
+
+    .figma-light .icon--light {
+      display: inline-block;
+    }
+
     .button--secondary {
       background-color: var(--figma-color-bg);
       color: var(--figma-color-text);
       border-color: var(--figma-color-text);
     }
+
     .flip-h {
       transform: scaleX(-1);
     }
+
     h2 {
       font-size: 1rem;
     }
+
     .icon--warning-orange {
       background-image: url("data:image/svg+xml;charset=utf8,%3Csvg fill='none' height='32' width='32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath clip-rule='evenodd' d='M16 9l8 14H8zm-1 8.5V14h2v3.5zm0 1.5v2h2v-2z' fill='%23f00' fill-rule='evenodd'/%3E%3C/svg%3E");
+    }
+
+    .button.loading {
+      position: relative;
+    }
+    .button.loading::after {
+      content: '';
+      position: absolute;
+      right: 2px;
+      margin-left: 4px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border-width: 1px 2px 2px 1px;
+      border-color: var(--figma-color-text) var(--figma-color-text) transparent transparent;
+      border-style: solid;
+      animation: loading 1s infinite linear;
+    }
+
+    .figma-light .button.loading::after {
+      border-color: var(--figma-color-bg) var(--figma-color-bg) transparent transparent;
+    }
+
+    *:focus-visible {
+      outline: 2px dashed var(--figma-color-text) !important;
+      outline-offset: 2px !important;
+    }
+
+    @keyframes loading {
+      to {
+        transform: rotate(360deg)
+      }
     }
   </style>
 </head>
@@ -202,38 +238,34 @@
       </span>
     </p> -->
     <div class="button-group">
-      <button class='button button--secondary' id="load-base-styles">Load styles from selection</button>
+      <button class='button button--secondary' id="load-base-styles">Load from selection</button>
       <button class='button button--secondary' id="load-local-styles">Load local styles</button>
     </div>
   </section>
   <section id="content-wrapper" hidden>
     <section class="m-small">
-      <h2 class="mb-xsmall">Loaded styles</h2>
-
+      <h2 class="mb-xsmall">Loaded Text styles</h2>
       <div class="mb-xxsmall type--medium ">
-        <label for="select-style">Selected comparison style</label>
+        <label for="select-style">Text style</label>
       </div>
       <div class="bar mb-xxsmall">
-        <select id="select-style" class="select-menu">
+        <select id="select-style">
         </select>
         <button class='icon-button' id="clear-base-styles" aria-label="Clear loaded styles"
           data-tooltip="Clear loaded styles">
           <span class="icon icon--trash"></span>
         </button>
       </div>
-      <p class="mb-xxsmall ">Find equally styled nodes for selected style</p>
+      <p class="mb-xxsmall ">Find detached text that matches the selected Text Style</p>
       <div class="bar mb-small">
-        <button class='button button--secondary tooltip-wide' id="find-matching-style-nodes"
-          data-tooltip="Find equally styled nodes for selected style">Find equal</button>
-        <button class="button button--primary tooltip-wide grid-2-item--fullwidth" id="apply-style"
-          data-tooltip="Apply selected style to selected nodes">Apply style</button>
+        <button class='button button--secondary tooltip-wide' id="find-matching-style-nodes">Find equal and detached</button>
+        <button class="button button--primary tooltip-wide grid-2-item--fullwidth" id="apply-style">Apply style</button>
       </div>
-      <p class="mb-xxsmall ">Find nodes without style applied</p>
+      <p class="mb-xxsmall ">Find any detached text</p>
       <div class="bar mb-small">
-        <button class='button button--secondary tooltip-wide' id="find-no-style-nodes"
-          data-tooltip="Find nodes without style applied">Find empty</button>
-        <button class="button button--primary tooltip-wide grid-2-item--fullwidth" id="fix-selected"
-          data-tooltip="Fix detached styles in selected nodes">Fix selected</button>
+        <button class='button button--secondary tooltip-wide' id="find-no-style-nodes">Find any detached</button>
+        <button class="button button--primary tooltip-wide grid-2-item--fullwidth" id="fix-selected">Fix
+          selected</button>
       </div>
     </section>
     <section class="m-small">
@@ -245,7 +277,7 @@
         </button>
         <div>
           <div class="text-center ">Selected (<span id="selected-count">0</span>)</div>
-          <div class="text-center ">Selected style: <span id="selected-style">none</span></div>
+          <div class="text-center ">(Text style: <span id="selected-style">none</span>)</div>
         </div>
         <button class='icon-button' id="zoom-next" aria-label="Zoom to next node" data-tooltip="Zoom to next node">
           <span class="icon icon--back flip-h"></span>
@@ -256,33 +288,62 @@
     <section class="m-small">
       <h2 class="mb-xsmall">Find and Fix all</h2>
       <section class="mb-xsmall">
-        <div class="mb-xxsmall">detached text nodes on current page based on loaded styles</div>
-        <button class="button button--primary tooltip-wide" id="fix-current-detached"
-          data-tooltip="Fix all detached text nodes in current page">Fix current page</button>
+        <div class="mb-xxsmall">Fix detached text on current page based on loaded styles</div>
+        <button class="button button--primary tooltip-wide" id="fix-current-detached">Fix current page</button>
       </section>
       <hr>
       <section>
-        <div >detached text nodes in all pages based on loaded styles</div>
-        <div class="bar bar--narrow bar--nowrap type--xsmall">
-          <span class="icon icon--warning-orange"></span> <span class="text--grey">This action can freeze your figma for a few minutes!</span>
+        <div class="mb-xxsmall">Fix detached text in all pages based on loaded styles</div>
+        <div class="bar bar--narrow bar--nowrap type--xsmall mb-xxsmall">
+          <svg class="icon--light" width="16" height="16" viewBox="0 0 16 16" fill="none"
+            xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M7.99988 5.99995V8.49995M1.79788 10.7506C1.22055 11.7506 1.94255 13 3.09655 13H12.9032C14.0565 13 14.7785 11.7506 14.2019 10.7506L9.29921 2.25195C8.72188 1.25195 7.27788 1.25195 6.70055 2.25195L1.79788 10.7506ZM7.99988 10.5H8.00455V10.5053H7.99988V10.5Z"
+              stroke="#FD9814" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <svg class="icon--dark" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M7.99988 6.00008V8.50008M1.79788 10.7507C1.22055 11.7507 1.94255 13.0001 3.09655 13.0001H12.9032C14.0565 13.0001 14.7785 11.7507 14.2019 10.7507L9.29921 2.25208C8.72188 1.25208 7.27788 1.25208 6.70055 2.25208L1.79788 10.7507ZM7.99988 10.5001H8.00455V10.5054H7.99988V10.5001Z"
+              stroke="#F2A33C" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span class="text--grey">This action can freeze your figma for
+            a few minutes!</span>
         </div>
-        <button class="button button--primary-destructive tooltip-wide" id="fix-all-detached"
-          data-tooltip="Fix all detached text nodes in all pages (Warning: This action can freeze your figma for a few minutes!)">Fix
-          all pages</button>
+        <button class="button button--primary-destructive tooltip-wide" id="fix-all-detached">Fix all pages</button>
       </section>
     </section>
     <section class="m-small">
       <div class="bar bar--stretch type--xsmall text--grey">
         <p>Made by <a href="#">Dušan</a> and <a href="#">Lukáš</a><br>from <a href="#">Lighting Beetle*</a></p>
-        <a href="https://google.com" class="bar bar--narrow bar--nowrap"><span class="icon icon--warning"></span> <span>Support this plugin</span></a>
+        <a target="_blank" href="https://www.google.com" class="bar bar--narrow bar--nowrap">
+          <svg class="icon--dark" width="16" height="16" viewBox="0 0 16 16" fill="none"
+            xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M12.6456 4.80591C12.3903 4.55042 12.0871 4.34774 11.7533 4.20945C11.4196 4.07117 11.0619 4 10.7006 4C10.3394 4 9.9817 4.07117 9.64797 4.20945C9.31424 4.34774 9.01102 4.55042 8.75565 4.80591L8.22565 5.33591L7.69565 4.80591C7.1798 4.29007 6.48016 4.00027 5.75065 4.00027C5.02113 4.00027 4.32149 4.29007 3.80565 4.80591C3.2898 5.32176 3 6.0214 3 6.75091C3 7.48043 3.2898 8.18007 3.80565 8.69591L4.33565 9.22591L8.22565 13.1159L12.1156 9.22591L12.6456 8.69591C12.9011 8.44054 13.1038 8.13732 13.2421 7.80359C13.3804 7.46986 13.4516 7.11216 13.4516 6.75091C13.4516 6.38967 13.3804 6.03196 13.2421 5.69824C13.1038 5.36451 12.9011 5.06129 12.6456 4.80591Z"
+              stroke="#9C9C9C" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <svg class="icon--light" width="16" height="16" viewBox="0 0 16 16" fill="none"
+            xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M12.6456 4.80591C12.3903 4.55042 12.0871 4.34774 11.7533 4.20945C11.4196 4.07117 11.0619 4 10.7006 4C10.3394 4 9.9817 4.07117 9.64797 4.20945C9.31424 4.34774 9.01102 4.55042 8.75565 4.80591L8.22565 5.33591L7.69565 4.80591C7.1798 4.29007 6.48016 4.00027 5.75065 4.00027C5.02113 4.00027 4.32149 4.29007 3.80565 4.80591C3.2898 5.32176 3 6.0214 3 6.75091C3 7.48043 3.2898 8.18007 3.80565 8.69591L4.33565 9.22591L8.22565 13.1159L12.1156 9.22591L12.6456 8.69591C12.9011 8.44054 13.1038 8.13732 13.2421 7.80359C13.3804 7.46986 13.4516 7.11216 13.4516 6.75091C13.4516 6.38967 13.3804 6.03196 13.2421 5.69824C13.1038 5.36451 12.9011 5.06129 12.6456 4.80591Z"
+              stroke="#7F7F7F" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span>Support this plugin</span></a>
       </div>
     </section>
   </section>
   <script src="https://cdn.jsdelivr.net/gh/thomas-lowry/figma-plugin-ds/dist/iife/figma-plugin-ds.js"></script>
   <script>
 
+    const buttons = Array.from(document.querySelectorAll('.button')).forEach(button => {
+      button.addEventListener('click', e => {
+          e.currentTarget.classList.add('loading')
+      })
+    })
+
     const updateSelectElement = (selectElement, styles) => {
-      selectElement.innerHTML = `${styles.sort((a, b) => {
+      selectElement.innerHTML = `
+      ${styles.sort((a, b) => {
         if (a.name < b.name) {
           return -1;
         }
@@ -314,6 +375,10 @@
       //   // document.getElementById('load-base-styles').setAttribute('disabled', true)
       // }
 
+      if (type === 'action-ended') {
+        document.querySelector('.loading').classList.remove('loading')
+      }
+
       if (type === 'selection-changed') {
         updateSelectedCount(selectionLength)
         updateSelectedStyle(selectedStyle)
@@ -326,12 +391,12 @@
         contentWrapper.removeAttribute('hidden')
 
         //initialize all select menus
-        selectMenu.init();
+        // selectMenu.init();
       }
 
       if (type === 'clear-styles') {
         //uninitialize all select menus
-        selectMenu.destroy();
+        // selectMenu.destroy();
 
         selectElement.innerHTML = ''
         contentWrapper.setAttribute('hidden', true)
@@ -377,13 +442,17 @@
     tooltip.className = 'tooltip'
 
     document.querySelectorAll('[data-tooltip]').forEach(el => {
-      el.addEventListener('mouseenter', (e) => {
+      const handleFocus = (e) => {
         tooltip.innerText = e.currentTarget.getAttribute('data-tooltip')
         e.currentTarget.appendChild(tooltip)
-      })
-      el.addEventListener('mouseleave', (e) => {
+      }
+      const handleBlur = (e) => {
         e.currentTarget.querySelector('.tooltip').remove()
-      })
+      }
+      el.addEventListener('focus', handleFocus)
+      el.addEventListener('blur', handleBlur)
+      el.addEventListener('mouseenter', handleFocus)
+      el.addEventListener('mouseleave', handleBlur)
     })
 
     // document.getElementById('search-all-pages').onchange = (e) => {
